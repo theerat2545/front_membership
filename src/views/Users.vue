@@ -1,14 +1,37 @@
 <template>
+
+  <div class="flex justify-between items-center">
+    <!-- Button Add User -->
     <button @click="openModal('Register User')" class="btn btn-info mb-2 text-base-100">
-      <i class="fa-solid fa-plus"></i> Add
+        <i class="fa-solid fa-plus"></i> Add
     </button>
+
+    <!-- Select Search -->
+    <!-- <div class="flex items-center gap-2">
+        <select v-model="searchType" class="select select-bordered">
+            <option disabled value="">Select Search Type</option>
+            <option value="id">ID</option>
+            <option value="name">Name</option>
+            <option value="gender">Gender</option>
+            <option value="age">Age</option>
+            <option value="username">Username</option>
+        </select>
+
+        <input v-model="searchQuery" type="text" placeholder="Enter Search Value" class="input input-bordered">
+
+        <button @click="searchUser" class="btn btn-primary">
+            <i class="fa-solid fa-search"></i>
+        </button>
+    </div> -->
+</div>
+    <!-- Table Show Users -->
     <div class="overflow-x-auto">
       <table class="table table-sm">
         <thead class="bg-base-300 text-base-content">
           <tr>
             <th>
               <label>
-                <input type="checkbox" class="checkbox" />
+                <input type="checkbox" @change="selectAll" v-model="allSelected" class="checkbox" />
               </label>
             </th>
             <th>#</th>
@@ -26,7 +49,7 @@
           <tr v-for="(user, index) in users" :key="user.id">
             <th>
               <label>
-                <input type="checkbox" class="checkbox" />
+                <input type="checkbox" v-model="selectedUsers" :value="user.id" class="checkbox" />
               </label>
             </th>
             <td>{{ index + 1 }}</td>
@@ -35,8 +58,8 @@
             <td>{{ user.age }}</td>
             <td>{{ user.phone }}</td>
             <td>{{ user.role }}</td>
-            <td>{{ user.createdAt }}</td>
-            <td>{{ user.updatedAt }}</td>
+            <td>{{ formatDate(user.createdAt) }}</td>
+            <td>{{ formatDate(user.updatedAt) }}</td> 
             <td>
               <button
                 @click="openModal('Edit User', user)"
@@ -119,14 +142,15 @@ const add = ref({
   password: '',
   confirm_password: '',
 });
-const selectedUserId = ref(null); // Store the selected user ID for editing
+const selectedUserId = ref(null);
+const allSelected = ref(false); 
+const selectedUsers = ref([]); 
 
 // Fetch users from the API
 const fetchData = async () => {
   await axios.get(`${import.meta.env.VITE_API}/users`)
     .then((response) => {
       users.value = response.data.data;
-      console.log(users);
     }).catch((err) => {
       console.log(err);
     });
@@ -157,7 +181,7 @@ const editUser = async () => {
     age: add.value.age,
     phone: add.value.phone,
     username: add.value.username,
-    password: add.value.confirm_password, // Update password if changed
+    password: add.value.confirm_password, 
   })
   .then((response) => {
     console.log('User updated', response);
@@ -169,7 +193,6 @@ const editUser = async () => {
 // Function to delete a user
 const deleteUser = async (userId) => {
   try {
-    // ยืนยันการลบผู้ใช้ด้วย SweetAlert
     const result = await Swal.fire({
       title: 'Are you sure?',
       text: "You won't be able to revert this!",
@@ -183,14 +206,13 @@ const deleteUser = async (userId) => {
     if (result.isConfirmed) {
       await axios.delete(`${import.meta.env.VITE_API}/users/${userId}`);
       Swal.fire('Deleted!', 'User has been deleted.', 'success');
-      fetchData(); // Refresh the user list after deletion
+      fetchData();
     }
   } catch (error) {
     Swal.fire('Error!', 'Failed to delete user. Please check if the user exists.', 'error');
     console.error("Error deleting user:", error);
   }
 };
-
 
 // Function to check passwords and decide whether to add or edit a user
 const checkPass = async () => {
@@ -211,6 +233,7 @@ const checkPass = async () => {
   }
 };
 
+
 // Function to open the modal
 const openModal = (type, user = null) => {
   currentModalType.value = type;
@@ -225,8 +248,8 @@ const openModal = (type, user = null) => {
     add.value.age = user.age;
     add.value.phone = user.phone;
     add.value.username = user.username;
-    add.value.password = ''; // Clear password for security
-    add.value.confirm_password = ''; // Clear confirm password for security
+    add.value.password = ''; 
+    add.value.confirm_password = ''; 
   } else {
     // Clear fields for adding a new user
     selectedUserId.value = null;
@@ -242,15 +265,34 @@ const openModal = (type, user = null) => {
   }
 };
 
-// Function to close the modal
+
 const closeModal = () => {
   showModal.value = false;
 };
 
-// Fetch data when component is mounted
+const selectAll = () => {
+  if (allSelected.value) {
+    selectedUsers.value = users.value.map(user => user.id);
+  } else {
+    selectedUsers.value = []; 
+  }
+};
+
+// Set Format Date
+const formatDate = (dateString) => {
+  if (!dateString) {
+    return ''; 
+  }
+  const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+  const date = new Date(dateString);
+  if (isNaN(date)) {
+    return ''; 
+  }
+  return date.toLocaleDateString('en-TH', options);
+};
+
 onMounted(() => fetchData());
 </script>
 
   
 <style lang="scss" scoped></style>
-  
